@@ -2282,7 +2282,7 @@ typedef unsigned int flag_t;           /* The type of various bit flag sets */
 
 /* Set size, pinuse bit, and foot */
 #define set_size_and_pinuse_of_free_chunk(p, s)\
-  ((p)->head = (s|PINUSE_BIT), set_foot(p, s))
+  ((p)->head = ((s)|PINUSE_BIT), set_foot(p, s))
 
 /* Set size, pinuse bit, foot, and clear next pinuse */
 #define set_free_with_pinuse(p, s, n)\
@@ -2692,7 +2692,7 @@ static struct malloc_state _gm_;
 
 /*  True if segment S holds address A */
 #define segment_holds(S, A)\
-  ((char*)(A) >= S->base && (char*)(A) < S->base + S->size)
+  ((char*)(A) >= (S)->base && (char*)(A) < (S)->base + (S)->size)
 
 /* Return segment holding given address */
 static msegmentptr segment_holding(mstate m, char* addr) {
@@ -2836,14 +2836,14 @@ static size_t traverse_and_check(mstate m);
 #if defined(__GNUC__) && (defined(__i386__) || defined(__x86_64__))
 #define compute_tree_index(S, I)\
 {\
-  unsigned int X = S >> TREEBIN_SHIFT;\
+  unsigned int X = (S) >> TREEBIN_SHIFT;\
   if (X == 0)\
-    I = 0;\
+    (I) = 0;\
   else if (X > 0xFFFF)\
-    I = NTREEBINS-1;\
+    (I) = NTREEBINS-1;\
   else {\
     unsigned int K = (unsigned) sizeof(X)*__CHAR_BIT__ - 1 - (unsigned) __builtin_clz(X); \
-    I =  (bindex_t)((K << 1) + ((S >> (K + (TREEBIN_SHIFT-1)) & 1)));\
+    (I) =  (bindex_t)((K << 1) + (((S) >> (K + (TREEBIN_SHIFT-1)) & 1)));\
   }\
 }
 
@@ -2898,11 +2898,11 @@ static size_t traverse_and_check(mstate m);
 
 /* Bit representing maximum resolved size in a treebin at i */
 #define bit_for_tree_index(i) \
-   (i == NTREEBINS-1)? (SIZE_T_BITSIZE-1) : (((i) >> 1) + TREEBIN_SHIFT - 2)
+   ((i) == NTREEBINS-1)? (SIZE_T_BITSIZE-1) : (((i) >> 1) + TREEBIN_SHIFT - 2)
 
 /* Shift placing maximum resolved bit in a treebin at i as sign bit */
 #define leftshift_for_tree_index(i) \
-   ((i == NTREEBINS-1)? 0 : \
+   (((i) == NTREEBINS-1)? 0 : \
     ((SIZE_T_BITSIZE-SIZE_T_ONE) - (((i) >> 1) + TREEBIN_SHIFT - 2)))
 
 /* The size of the smallest chunk held in bin with index i */
@@ -2929,7 +2929,7 @@ static size_t traverse_and_check(mstate m);
 #define least_bit(x)         ((x) & -(x))
 
 /* mask with all bits to left of least bit of x on */
-#define left_bits(x)         ((x<<1) | -(x<<1))
+#define left_bits(x)         (((x)<<1) | -((x)<<1))
 
 /* mask with all bits to left of or equal to least bit of x on */
 #define same_or_left_bits(x) ((x) | -(x))
@@ -2941,7 +2941,7 @@ static size_t traverse_and_check(mstate m);
 {\
   unsigned int J;\
   J = __builtin_ctz(X); \
-  I = (bindex_t)J;\
+  (I) = (bindex_t)J;\
 }
 
 #elif defined (__INTEL_COMPILER)
@@ -3051,17 +3051,17 @@ static size_t traverse_and_check(mstate m);
 
 /* Set cinuse bit and pinuse bit of next chunk */
 #define set_inuse(M,p,s)\
-  ((p)->head = (((p)->head & PINUSE_BIT)|s|CINUSE_BIT),\
+  ((p)->head = (((p)->head & PINUSE_BIT)|(s)|CINUSE_BIT),\
   ((mchunkptr)(((char*)(p)) + (s)))->head |= PINUSE_BIT)
 
 /* Set cinuse and pinuse of this chunk and pinuse of next chunk */
 #define set_inuse_and_pinuse(M,p,s)\
-  ((p)->head = (s|PINUSE_BIT|CINUSE_BIT),\
+  ((p)->head = ((s)|PINUSE_BIT|CINUSE_BIT),\
   ((mchunkptr)(((char*)(p)) + (s)))->head |= PINUSE_BIT)
 
 /* Set size, cinuse and pinuse bit of this chunk */
 #define set_size_and_pinuse_of_inuse_chunk(M, p, s)\
-  ((p)->head = (s|PINUSE_BIT|CINUSE_BIT))
+  ((p)->head = ((s)|PINUSE_BIT|CINUSE_BIT))
 
 #else /* FOOTERS */
 
@@ -3587,7 +3587,7 @@ static void internal_malloc_stats(mstate m) {
   bindex_t I  = small_index(S);\
   mchunkptr B = smallbin_at(M, I);\
   mchunkptr F = B;\
-  assert(S >= MIN_CHUNK_SIZE);\
+  assert((S) >= MIN_CHUNK_SIZE);\
   if (!smallmap_is_marked(M, I))\
     mark_smallmap(M, I);\
   else if (RTCHECK(ok_address(M, B->fd)))\
@@ -3597,24 +3597,24 @@ static void internal_malloc_stats(mstate m) {
   }\
   B->fd = P;\
   F->bk = P;\
-  P->fd = F;\
-  P->bk = B;\
+  (P)->fd = F;\
+  (P)->bk = B;\
 }
 
 /* Unlink a chunk from a smallbin  */
 #define unlink_small_chunk(M, P, S) {\
-  mchunkptr F = P->fd;\
-  mchunkptr B = P->bk;\
+  mchunkptr F = (P)->fd;\
+  mchunkptr B = (P)->bk;\
   bindex_t I = small_index(S);\
-  assert(P != B);\
-  assert(P != F);\
+  assert((P) != B);\
+  assert((P) != F);\
   assert(chunksize(P) == small_index2size(I));\
-  if (RTCHECK(F == smallbin_at(M,I) || (ok_address(M, F) && F->bk == P))) { \
+  if (RTCHECK(F == smallbin_at(M,I) || (ok_address(M, F) && F->bk == (P)))) { \
     if (B == F) {\
       clear_smallmap(M, I);\
     }\
     else if (RTCHECK(B == smallbin_at(M,I) ||\
-                     (ok_address(M, B) && B->fd == P))) {\
+                     (ok_address(M, B) && B->fd == (P)))) {\
       F->bk = B;\
       B->fd = F;\
     }\
@@ -3629,16 +3629,16 @@ static void internal_malloc_stats(mstate m) {
 
 /* Unlink the first chunk from a smallbin */
 #define unlink_first_small_chunk(M, B, P, I) {\
-  mchunkptr F = P->fd;\
-  assert(P != B);\
-  assert(P != F);\
+  mchunkptr F = (P)->fd;\
+  assert((P) != (B));\
+  assert((P) != F);\
   assert(chunksize(P) == small_index2size(I));\
-  if (B == F) {\
+  if ((B) == F) {\
     clear_smallmap(M, I);\
   }\
-  else if (RTCHECK(ok_address(M, F) && F->bk == P)) {\
+  else if (RTCHECK(ok_address(M, F) && F->bk == (P))) {\
     F->bk = B;\
-    B->fd = F;\
+    (B)->fd = F;\
   }\
   else {\
     CORRUPTION_ERROR_ACTION(M);\
@@ -3648,14 +3648,14 @@ static void internal_malloc_stats(mstate m) {
 /* Replace dv node, binning the old one */
 /* Used only when dvsize known to be small */
 #define replace_dv(M, P, S) {\
-  size_t DVS = M->dvsize;\
+  size_t DVS = (M)->dvsize;\
   assert(is_small(DVS));\
   if (DVS != 0) {\
-    mchunkptr DV = M->dv;\
+    mchunkptr DV = (M)->dv;\
     insert_small_chunk(M, DV, DVS);\
   }\
-  M->dvsize = S;\
-  M->dv = P;\
+  (M)->dvsize = S;\
+  (M)->dv = P;\
 }
 
 /* ------------------------- Operations on trees ------------------------- */
@@ -3666,27 +3666,27 @@ static void internal_malloc_stats(mstate m) {
   bindex_t I;\
   compute_tree_index(S, I);\
   H = treebin_at(M, I);\
-  X->index = I;\
-  X->child[0] = X->child[1] = 0;\
+  (X)->index = I;\
+  (X)->child[0] = (X)->child[1] = 0;\
   if (!treemap_is_marked(M, I)) {\
     mark_treemap(M, I);\
     *H = X;\
-    X->parent = (tchunkptr)H;\
-    X->fd = X->bk = X;\
+    (X)->parent = (tchunkptr)H;\
+    (X)->fd = (X)->bk = X;\
   }\
   else {\
     tchunkptr T = *H;\
-    size_t K = S << leftshift_for_tree_index(I);\
+    size_t K = (S) << leftshift_for_tree_index(I);\
     for (;;) {\
-      if (chunksize(T) != S) {\
+      if (chunksize(T) != (S)) {\
         tchunkptr* C = &(T->child[(K >> (SIZE_T_BITSIZE-SIZE_T_ONE)) & 1]);\
         K <<= 1;\
         if (*C != 0)\
           T = *C;\
         else if (RTCHECK(ok_address(M, C))) {\
           *C = X;\
-          X->parent = T;\
-          X->fd = X->bk = X;\
+          (X)->parent = T;\
+          (X)->fd = (X)->bk = X;\
           break;\
         }\
         else {\
@@ -3698,9 +3698,9 @@ static void internal_malloc_stats(mstate m) {
         tchunkptr F = T->fd;\
         if (RTCHECK(ok_address(M, T) && ok_address(M, F))) {\
           T->fd = F->bk = X;\
-          X->fd = F;\
-          X->bk = T;\
-          X->parent = 0;\
+          (X)->fd = F;\
+          (X)->bk = T;\
+          (X)->parent = 0;\
           break;\
         }\
         else {\
@@ -3730,12 +3730,12 @@ static void internal_malloc_stats(mstate m) {
 */
 
 #define unlink_large_chunk(M, X) {\
-  tchunkptr XP = X->parent;\
+  tchunkptr XP = (X)->parent;\
   tchunkptr R;\
-  if (X->bk != X) {\
-    tchunkptr F = X->fd;\
-    R = X->bk;\
-    if (RTCHECK(ok_address(M, F) && F->bk == X && R->fd == X)) {\
+  if ((X)->bk != (X)) {\
+    tchunkptr F = (X)->fd;\
+    R = (X)->bk;\
+    if (RTCHECK(ok_address(M, F) && F->bk == (X) && R->fd == (X))) {\
       F->bk = R;\
       R->fd = F;\
     }\
@@ -3745,8 +3745,8 @@ static void internal_malloc_stats(mstate m) {
   }\
   else {\
     tchunkptr* RP;\
-    if (((R = *(RP = &(X->child[1]))) != 0) ||\
-        ((R = *(RP = &(X->child[0]))) != 0)) {\
+    if (((R = *(RP = &((X)->child[1]))) != 0) ||\
+        ((R = *(RP = &((X)->child[0]))) != 0)) {\
       tchunkptr* CP;\
       while ((*(CP = &(R->child[1])) != 0) ||\
              (*(CP = &(R->child[0])) != 0)) {\
@@ -3760,13 +3760,13 @@ static void internal_malloc_stats(mstate m) {
     }\
   }\
   if (XP != 0) {\
-    tbinptr* H = treebin_at(M, X->index);\
-    if (X == *H) {\
+    tbinptr* H = treebin_at(M, (X)->index);\
+    if ((X) == *H) {\
       if ((*H = R) == 0) \
-        clear_treemap(M, X->index);\
+        clear_treemap(M, (X)->index);\
     }\
     else if (RTCHECK(ok_address(M, XP))) {\
-      if (XP->child[0] == X) \
+      if (XP->child[0] == (X)) \
         XP->child[0] = R;\
       else \
         XP->child[1] = R;\
@@ -3777,7 +3777,7 @@ static void internal_malloc_stats(mstate m) {
       if (RTCHECK(ok_address(M, R))) {\
         tchunkptr C0, C1;\
         R->parent = XP;\
-        if ((C0 = X->child[0]) != 0) {\
+        if ((C0 = (X)->child[0]) != 0) {\
           if (RTCHECK(ok_address(M, C0))) {\
             R->child[0] = C0;\
             C0->parent = R;\
@@ -3785,7 +3785,7 @@ static void internal_malloc_stats(mstate m) {
           else\
             CORRUPTION_ERROR_ACTION(M);\
         }\
-        if ((C1 = X->child[1]) != 0) {\
+        if ((C1 = (X)->child[1]) != 0) {\
           if (RTCHECK(ok_address(M, C1))) {\
             R->child[1] = C1;\
             C1->parent = R;\
